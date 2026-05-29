@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Salesforce, Inc.
+#
+# Template playground config for the Qdrant variant.
+#
+# Two flavors:
+#   1. Local Qdrant Docker container (default, no auth) — usable as-is.
+#   2. Qdrant Cloud (real upstream) — uncomment the Cloud block and fill in
+#      the three <your-…> placeholders.
+#
+# Usage:
+#   cp api.example.yaml api.yaml
+#   $EDITOR api.yaml         # leave defaults for local, or switch to Cloud
+#   make run                 # the gitignored api.yaml is loaded by the gateway
+#
+# Prereqs (one-time):
+# - Local: a Qdrant container reachable at http://qdrant:6333 from inside the
+#   gateway docker-compose network (the playground compose file already starts
+#   one). Create the collection once:
+#       curl -sS -X PUT http://localhost:6333/collections/ai-semantic-cache \
+#         -H 'Content-Type: application/json' \
+#         -d '{"vectors":{"size":1536,"distance":"Cosine"}}'
+# - Cloud: a Qdrant Cloud cluster with a collection of the same dimension
+#   as `embedder.dimension` and `Cosine` distance.
+
+apiVersion: gateway.mulesoft.com/v1alpha1
+kind: ApiInstance
+metadata:
+  name: llm-api
+spec:
+  address: http://0.0.0.0:8185
+  services:
+    upstream:
+      # Real OpenAI chat completions endpoint (or any OpenAI-compatible LLM).
+      address: https://api.openai.com
+      routes:
+        - config:
+            destinationPath: /
+  policies:
+    - policyRef:
+        name: ai-semantic-cache-policy-openai-qdrant-v1-0-impl
+        namespace: default
+      config:
+        namespace: "local-dev"
+        embedder:
+          # OpenAI embeddings endpoint root. Helper appends `/embeddings`.
+          baseUrl: "https://api.openai.com/v1"
+          model: "text-embedding-3-small"
+          apiKey: "<your-openai-api-key>"
+          authHeader: "Authorization"
+          authScheme: "Bearer"
+          # Sent to OpenAI as `dimensions` and validated on response.
+          # MUST match the Qdrant collection vector size.
+          dimension: 1536
+          timeoutMs: 8000
+        vectordb:
+          # ----- Local Qdrant (default; no auth) -----
+          baseUrl: "http://qdrant:6333"
+          collection: "ai-semantic-cache"
+          timeoutMs: 8000
+          # ----- Qdrant Cloud (alternative) -----
+          # baseUrl: "https://<cluster-id>.<region>.aws.cloud.qdrant.io:6333"
+          # collection: "ai-semantic-cache"
+          # apiKey: "<your-qdrant-cloud-api-key>"
+          # timeoutMs: 8000
+        similarityThreshold: 0.92
+        ttlSeconds: 3600
+        exactCaching: true
+        bypassOnStream: true
+        promptExtractor: "openai"
+        cacheResponseStatusCodes: [200]
+        failureMode: "fail_open"

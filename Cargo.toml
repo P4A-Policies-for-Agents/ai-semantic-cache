@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Salesforce, Inc.
+[workspace]
+members = [
+    "ai-semantic-cache-core",
+    "ai-semantic-cache-policy-openai-pinecone/implementation",
+    "ai-semantic-cache-policy-openai-qdrant/implementation",
+    "ai-semantic-cache-policy-openai-azure-ai-search/implementation",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.88.0"
+
+[workspace.dependencies]
+ai_semantic_cache_core = { path = "ai-semantic-cache-core" }
+pdk = { version = "1.8.0" }
+pdk-test = { version = "1.8.0" }
+pdk-unit = { version = "1.8.0", features = ["experimental"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", default-features = false, features = ["alloc", "raw_value"] }
+anyhow = "1.0"
+async-trait = "0.1"
+sha2 = "0.10"
+hex = "0.4"
+base64 = { version = "0.22", default-features = false, features = ["alloc"] }
+httpmock = "0.6"
+reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls"] }
+tokio = { version = "1", default-features = false, features = ["macros", "rt-multi-thread", "time"] }
+
+[profile.release]
+lto = true
+opt-level = 'z'
+strip = "debuginfo"

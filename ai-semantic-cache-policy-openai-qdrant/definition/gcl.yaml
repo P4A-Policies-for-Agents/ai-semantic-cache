@@ -1,0 +1,129 @@
+---
+apiVersion: gateway.mulesoft.com/v1alpha1
+kind: Extension
+metadata:
+  labels:
+    title: AI Semantic Cache (OpenAI-compatible embedder + Qdrant)
+    description: |
+      Semantic response cache for LLM traffic. Caches LLM responses keyed by
+      semantic similarity of the prompt using an OpenAI-compatible embedder
+      and Qdrant (OSS / self-hosted or Qdrant Cloud) as the vector store.
+      Includes automatic model-in-key, exact-cache fast path backed by the
+      platform shared KV, configurable similarity threshold, TTL, and
+      fail-open / fail-closed semantics.
+    category: AI
+    metadata/interfaceScope: api
+    metadata/capabilities/assetTypes: llm
+spec:
+  extends:
+    - name: extension-definition
+      namespace: default
+  properties:
+    namespace:
+      type: string
+      title: Cache Namespace
+      description: Logical partition for cached entries. Stored as Pinecone vector metadata; different namespaces never share entries.
+    embedder:
+      type: object
+      title: Embedder (OpenAI-compatible)
+      properties:
+        baseUrl:
+          type: string
+          format: service
+          title: Embeddings Base URL
+          description: OpenAI-compatible embeddings base URL (e.g. https://api.openai.com/v1, https://your-tei.example/v1, http://vllm:8000/v1).
+          default: https://api.openai.com/v1
+        model:
+          type: string
+          title: Embedding Model
+          description: Model name passed in the request body (e.g. text-embedding-3-small).
+          default: text-embedding-3-small
+        apiKey:
+          type: string
+          title: API Key
+          description: Optional API key for authenticated endpoints. Omit for unauthenticated self-hosted servers.
+          "@context":
+            "@characteristics":
+              - "security:sensitive"
+        authHeader:
+          type: string
+          title: Auth Header Name
+          description: Header for the API key. Authorization (default), api-key (Azure OpenAI), X-API-Key (some self-hosted).
+          default: Authorization
+        authScheme:
+          type: string
+          title: Auth Scheme
+          description: Prefix for the API key value. "Bearer" (default); empty for raw-key endpoints (e.g. Azure OpenAI uses raw key in api-key header).
+          default: Bearer
+        dimension:
+          type: integer
+          title: Vector Dimension
+          description: "Vector size. Sent to OpenAI as the `dimensions` request parameter (per-request truncation is supported by `text-embedding-3-small` / `text-embedding-3-large`); the response is also validated to be exactly this size. MUST match the Qdrant collection vector size. For self-hosted embedders (TEI / vLLM) and older models (`ada-002`), set this to the model's native size — those servers typically ignore the extra request key."
+          minimum: 1
+        timeoutMs:
+          type: integer
+          title: Embedder Timeout (ms)
+          default: 5000
+      required: [baseUrl, model, dimension]
+    vectordb:
+      type: object
+      title: Qdrant Vector DB
+      properties:
+        baseUrl:
+          type: string
+          format: service
+          title: Qdrant Base URL
+          description: Qdrant base URL (e.g. http://qdrant:6333 for self-hosted, or https://<cluster>.<region>.aws.cloud.qdrant.io:6333 for Qdrant Cloud).
+        collection:
+          type: string
+          title: Collection Name
+          description: Qdrant collection that stores cached entries. Must already exist with the same dimension as `embedder.dimension` and `Cosine` distance.
+        apiKey:
+          type: string
+          title: Qdrant API Key
+          description: API key for Qdrant Cloud (sent as the `api-key` header). Omit for unauthenticated self-hosted instances.
+          "@context":
+            "@characteristics":
+              - "security:sensitive"
+        timeoutMs:
+          type: integer
+          title: Qdrant Timeout (ms)
+          default: 5000
+      required: [baseUrl, collection]
+    similarityThreshold:
+      type: number
+      title: Similarity Threshold
+      description: Minimum cosine similarity for a semantic hit (0..1). Set to 1.01 to disable semantic hits and run as exact-cache only.
+      minimum: 0.0
+      maximum: 1.5
+      default: 0.92
+    ttlSeconds:
+      type: integer
+      title: TTL (seconds)
+      description: TTL applied to exact-cache entries in the platform shared KV. Qdrant points are not auto-expired by this policy; operators should expire entries on the Qdrant side if they want it.
+      default: 3600
+      minimum: 1
+    exactCaching:
+      type: boolean
+      title: Exact-cache Fast Path
+      description: When true, the policy first looks up the SHA-256 of the canonical prompt in the platform shared KV (no Qdrant call, no embedding call). Recommended.
+      default: true
+    bypassOnStream:
+      type: boolean
+      default: true
+    promptExtractor:
+      type: string
+      enum: [openai, anthropic, cohere, mistral, bedrock, vertex]
+      default: openai
+    cacheResponseStatusCodes:
+      type: array
+      items:
+        type: integer
+        minimum: 100
+        maximum: 599
+      default: [200]
+    failureMode:
+      type: string
+      enum: [fail_open, fail_closed]
+      default: fail_open
+  required: [namespace, embedder, vectordb]

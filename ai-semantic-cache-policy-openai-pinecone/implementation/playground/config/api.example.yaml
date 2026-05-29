@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Salesforce, Inc.
+#
+# Template playground config for real OpenAI + real Pinecone serverless.
+#
+# Usage:
+#   cp api.example.yaml api.yaml
+#   $EDITOR api.yaml         # fill in the three <your-…> placeholders
+#   make run                 # the gitignored api.yaml is loaded by the gateway
+#
+# Prereqs (one-time):
+# - Pinecone serverless index, metric=cosine, dimension matches the
+#   embedder model below. Create from the Pinecone console or:
+#       curl -sS -X POST https://api.pinecone.io/indexes \
+#         -H 'Api-Key: <your-pinecone-api-key>' \
+#         -H 'Content-Type: application/json' \
+#         -d '{"name":"ai-semantic-cache",
+#              "dimension":1024,
+#              "metric":"cosine",
+#              "spec":{"serverless":{"cloud":"aws","region":"us-east-1"}}}'
+#   Copy the returned `host` field into vectordb.indexHost below.
+
+apiVersion: gateway.mulesoft.com/v1alpha1
+kind: ApiInstance
+metadata:
+  name: llm-api
+spec:
+  address: http://0.0.0.0:8185
+  services:
+    upstream:
+      # Real OpenAI chat completions endpoint.
+      address: https://api.openai.com
+      routes:
+        - config:
+            destinationPath: /
+  policies:
+    - policyRef:
+        name: ai-semantic-cache-policy-openai-pinecone-v1-0-impl
+        namespace: default
+      config:
+        namespace: "local-dev"
+        embedder:
+          # OpenAI embeddings endpoint root. Helper appends `/embeddings`.
+          baseUrl: "https://api.openai.com/v1"
+          model: "text-embedding-3-large"
+          apiKey: "<your-openai-api-key>"
+          authHeader: "Authorization"
+          authScheme: "Bearer"
+          # `text-embedding-3-large` natively returns 3072 floats; OpenAI
+          # supports per-request truncation for the `-3-*` models via the
+          # `dimensions` request parameter, which the policy sends using
+          # the `dimension` value below. `dimension` MUST match what the
+          # Pinecone index was created with. For self-hosted servers
+          # (TEI / vLLM) and older models (`ada-002`), set `dimension` to
+          # the model's native size — those servers usually ignore the
+          # extra request key.
+          dimension: 1024
+          timeoutMs: 8000
+        vectordb:
+          # Per-index URL from the Pinecone console (e.g.
+          # https://ai-semantic-cache-abc123.svc.aws-us-east-1.pinecone.io).
+          indexHost: "<your-pinecone-index-host>"
+          apiKey: "<your-pinecone-api-key>"
+          timeoutMs: 8000
+        similarityThreshold: 0.92
+        ttlSeconds: 3600
+        exactCaching: true
+        bypassOnStream: true
+        promptExtractor: "openai"
+        cacheResponseStatusCodes: [200]
+        failureMode: "fail_open"

@@ -1,0 +1,139 @@
+---
+apiVersion: gateway.mulesoft.com/v1alpha1
+kind: Extension
+metadata:
+  labels:
+    title: AI Semantic Cache (OpenAI-compatible embedder + Azure AI Search)
+    description: |
+      Semantic response cache for LLM traffic. Caches LLM responses keyed by
+      semantic similarity of the prompt using an OpenAI-compatible embedder
+      and Azure AI Search (formerly Cognitive Search) vector index as the
+      vector store. Includes automatic model-in-key, exact-cache fast path
+      backed by the platform shared KV, configurable similarity threshold,
+      TTL, and fail-open / fail-closed semantics.
+    category: AI
+    metadata/interfaceScope: api
+    metadata/capabilities/assetTypes: llm
+spec:
+  extends:
+    - name: extension-definition
+      namespace: default
+  properties:
+    namespace:
+      type: string
+      title: Cache Namespace
+      description: Logical partition for cached entries. Stored as a string field on the search document; different namespaces never share entries.
+    embedder:
+      type: object
+      title: Embedder (OpenAI-compatible)
+      properties:
+        baseUrl:
+          type: string
+          format: service
+          title: Embeddings Base URL
+          description: OpenAI-compatible embeddings base URL (e.g. https://api.openai.com/v1, https://your-tei.example/v1, http://vllm:8000/v1).
+          default: https://api.openai.com/v1
+        model:
+          type: string
+          title: Embedding Model
+          description: Model name passed in the request body (e.g. text-embedding-3-small).
+          default: text-embedding-3-small
+        apiKey:
+          type: string
+          title: API Key
+          description: Optional API key for authenticated endpoints. Omit for unauthenticated self-hosted servers.
+          "@context":
+            "@characteristics":
+              - "security:sensitive"
+        authHeader:
+          type: string
+          title: Auth Header Name
+          description: Header for the API key. Authorization (default), api-key (Azure OpenAI), X-API-Key (some self-hosted).
+          default: Authorization
+        authScheme:
+          type: string
+          title: Auth Scheme
+          description: Prefix for the API key value. "Bearer" (default); empty for raw-key endpoints (e.g. Azure OpenAI uses raw key in api-key header).
+          default: Bearer
+        dimension:
+          type: integer
+          title: Vector Dimension
+          description: "Vector size. Sent to OpenAI as the `dimensions` request parameter (per-request truncation is supported by `text-embedding-3-small` / `text-embedding-3-large`); the response is also validated to be exactly this size. MUST match the Azure AI Search vector field dimension. For self-hosted embedders (TEI / vLLM) and older models (`ada-002`), set this to the model's native size — those servers typically ignore the extra request key."
+          minimum: 1
+        timeoutMs:
+          type: integer
+          title: Embedder Timeout (ms)
+          default: 5000
+      required: [baseUrl, model, dimension]
+    vectordb:
+      type: object
+      title: Azure AI Search
+      properties:
+        endpoint:
+          type: string
+          format: service
+          title: Search Endpoint
+          description: Azure AI Search service endpoint (e.g. https://<service>.search.windows.net).
+        indexName:
+          type: string
+          title: Index Name
+          description: Name of the Azure AI Search index that stores cached entries. Must already exist with a vector field of the same dimension as `embedder.dimension`. Note that `@search.score` is reranked by Azure (BM25 + vector + reranker), not raw cosine; tune `similarityThreshold` against your corpus rather than copying values from cosine-based variants.
+        vectorField:
+          type: string
+          title: Vector Field Name
+          description: Name of the Edm.Collection(Edm.Single) vector field in the index.
+          default: embedding
+        apiKey:
+          type: string
+          title: Admin API Key
+          description: Azure AI Search admin key. Sent as the `api-key` header on every request.
+          "@context":
+            "@characteristics":
+              - "security:sensitive"
+        apiVersion:
+          type: string
+          title: API Version
+          description: Azure AI Search REST API version.
+          default: "2024-07-01"
+        timeoutMs:
+          type: integer
+          title: Search Timeout (ms)
+          default: 5000
+      required: [endpoint, indexName, apiKey]
+    similarityThreshold:
+      type: number
+      title: Similarity Threshold
+      description: Minimum cosine similarity for a semantic hit (0..1). Set to 1.01 to disable semantic hits and run as exact-cache only.
+      minimum: 0.0
+      maximum: 1.5
+      default: 0.92
+    ttlSeconds:
+      type: integer
+      title: TTL (seconds)
+      description: TTL applied to exact-cache entries in the platform shared KV. Azure AI Search documents are not auto-expired by this policy; operators should expire entries via index-side jobs if they want it.
+      default: 3600
+      minimum: 1
+    exactCaching:
+      type: boolean
+      title: Exact-cache Fast Path
+      description: When true, the policy first looks up the SHA-256 of the canonical prompt in the platform shared KV (no Azure AI Search call, no embedding call). Recommended.
+      default: true
+    bypassOnStream:
+      type: boolean
+      default: true
+    promptExtractor:
+      type: string
+      enum: [openai, anthropic, cohere, mistral, bedrock, vertex]
+      default: openai
+    cacheResponseStatusCodes:
+      type: array
+      items:
+        type: integer
+        minimum: 100
+        maximum: 599
+      default: [200]
+    failureMode:
+      type: string
+      enum: [fail_open, fail_closed]
+      default: fail_open
+  required: [namespace, embedder, vectordb]

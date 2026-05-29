@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Salesforce, Inc.
+version: "3.3"
+
+services:
+  local-flex:
+    image: mulesoft/flex-gateway:1.11.0
+    ports:
+      - "8185:8185"
+    volumes:
+      - ./config:/usr/local/share/mulesoft/flex-gateway/conf.d/
+    depends_on:
+      - mock-service
+      - pinecone-local
+
+  # MockServer stands in for the OpenAI-compatible Embeddings endpoint and
+  # the upstream LLM (chat/completions) — both are seeded with canned
+  # responses for the playground curl examples.
+  mock-service:
+    image: mockserver/mockserver:latest
+    ports:
+      - "8080:1080"
+    volumes:
+      - ./config/mockserver:/config
+    environment:
+      - MOCKSERVER_INITIALIZATION_JSON_PATH=/config/init.json
+      - MOCKSERVER_SERVER_PORT=1080
+
+  # Real Pinecone Local emulator — same REST surface as Pinecone serverless,
+  # in-memory, no API key required. Operators can curl /indexes,
+  # /vectors/upsert, /query etc. directly while iterating.
+  # Image is linux/amd64 only (runs fine via emulation on arm64 macs).
+  pinecone-local:
+    image: ghcr.io/pinecone-io/pinecone-local:latest
+    ports:
+      - "5080:5080"
+      - "5081-5090:5081-5090"
+    environment:
+      - PORT=5080
+      - PINECONE_HOST=localhost

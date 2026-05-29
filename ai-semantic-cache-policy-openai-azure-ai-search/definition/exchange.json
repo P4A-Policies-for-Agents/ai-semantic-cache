@@ -1,0 +1,8 @@
+{
+  "main": "metadata.yaml",
+  "groupId": "00000000-0000-0000-0000-000000000000",
+  "assetId": "ai-semantic-cache-policy-openai-azure-ai-search",
+  "version": "1.0.0",
+  "name": "AI Semantic Cache Policy (OpenAI + Azure AI Search)",
+  "description": "Semantic response cache for LLM traffic. OpenAI-compatible embedder + Azure AI Search vector index, with platform-managed exact-cache fast path."
+}

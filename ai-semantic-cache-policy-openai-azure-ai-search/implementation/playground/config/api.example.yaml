@@ -1,0 +1,73 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Salesforce, Inc.
+#
+# Template playground config for the Azure AI Search variant.
+#
+# Defaults: real OpenAI for embeddings + chat completions, real Azure AI
+# Search for the semantic layer. Fill in the four <your-…> placeholders
+# and you're set.
+#
+# Usage:
+#   cp api.example.yaml api.yaml
+#   $EDITOR api.yaml         # fill in placeholders
+#   ./init-azure-ai-search.sh  # one-time index setup (see playground/README.md)
+#   make run                 # the gitignored api.yaml is loaded by the gateway
+#
+# Prereqs (one-time):
+# - An Azure AI Search service. The bundled `init-azure-ai-search.sh`
+#   script creates the index with the schema the policy expects (id key,
+#   namespace + model filterable, embedding vector field with the right
+#   dimension and Cosine HNSW profile).
+# - `dimension` MUST equal the index vector field's dimensions and any
+#   per-request truncation supported by the embedder.
+
+apiVersion: gateway.mulesoft.com/v1alpha1
+kind: ApiInstance
+metadata:
+  name: llm-api
+spec:
+  address: http://0.0.0.0:8185
+  services:
+    upstream:
+      # Real OpenAI chat completions endpoint (or any OpenAI-compatible LLM).
+      address: https://api.openai.com
+      routes:
+        - config:
+            destinationPath: /
+  policies:
+    - policyRef:
+        name: ai-semantic-cache-policy-openai-azure-ai-search-v1-0-impl
+        namespace: default
+      config:
+        namespace: "local-dev"
+        embedder:
+          # OpenAI embeddings endpoint root. Helper appends `/embeddings`.
+          baseUrl: "https://api.openai.com/v1"
+          model: "text-embedding-3-small"
+          apiKey: "<your-openai-api-key>"
+          authHeader: "Authorization"
+          authScheme: "Bearer"
+          # Sent to OpenAI as `dimensions` and validated on response.
+          # MUST match the Azure AI Search vector field dimensions.
+          dimension: 1536
+          timeoutMs: 8000
+        vectordb:
+          # Azure AI Search service endpoint (no /indexes path; the
+          # policy appends it).
+          endpoint: "https://<your-search-service>.search.windows.net"
+          indexName: "ai-semantic-cache"
+          apiKey: "<your-azure-search-admin-key>"
+          vectorField: "embedding"
+          apiVersion: "2024-07-01"
+          timeoutMs: 8000
+        # NOTE: Azure's `@search.score` is reranked (BM25 + vector +
+        # optional semantic reranker), NOT raw cosine. Tune
+        # similarityThreshold against your corpus — a value that works
+        # well for Pinecone/Qdrant is unlikely to transfer. Start ~0.5.
+        similarityThreshold: 0.5
+        ttlSeconds: 3600
+        exactCaching: true
+        bypassOnStream: true
+        promptExtractor: "openai"
+        cacheResponseStatusCodes: [200]
+        failureMode: "fail_open"

@@ -1,0 +1,8 @@
+{
+  "main": "metadata.yaml",
+  "groupId": "00000000-0000-0000-0000-000000000000",
+  "assetId": "ai-semantic-cache-policy-openai-pinecone",
+  "version": "1.0.0",
+  "name": "AI Semantic Cache Policy (OpenAI + Pinecone)",
+  "description": "Semantic response cache for LLM traffic. OpenAI-compatible embedder + Pinecone serverless vector store, with platform-managed exact-cache fast path."
+}

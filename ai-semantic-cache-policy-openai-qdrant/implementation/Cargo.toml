@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Salesforce, Inc.
+[package]
+name = "ai_semantic_cache_openai_qdrant"
+version = "1.0.0"
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[package.metadata.anypoint]
+group_id = "00000000-0000-0000-0000-000000000000"
+definition_asset_id = { name = "ai-semantic-cache-policy-openai-qdrant", version = "1.0.0" }
+implementation_asset_id = "ai-semantic-cache-policy-openai-qdrant-v1-0-impl"
+
+[dependencies]
+ai_semantic_cache_core = { workspace = true }
+pdk = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+
+[dev-dependencies]
+pdk-test = { workspace = true }
+pdk-unit = { workspace = true }
+httpmock = { workspace = true }
+reqwest = { workspace = true, features = ["json"] }
+tokio = { workspace = true }
