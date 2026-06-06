@@ -5,12 +5,9 @@ metadata:
   labels:
     title: AI Semantic Cache (OpenAI-compatible embedder + Qdrant)
     description: |
-      Semantic response cache for LLM traffic. Caches LLM responses keyed by
-      semantic similarity of the prompt using an OpenAI-compatible embedder
-      and Qdrant (OSS / self-hosted or Qdrant Cloud) as the vector store.
-      Includes automatic model-in-key, exact-cache fast path backed by the
-      platform shared KV, configurable similarity threshold, TTL, and
-      fail-open / fail-closed semantics.
+      Semantic LLM response cache. OpenAI-compatible embedder + Qdrant
+      (OSS / self-hosted or Qdrant Cloud). Model-in-key, exact-cache fast
+      path, configurable similarity threshold, TTL, fail-open/closed.
     category: AI
     metadata/interfaceScope: api
     metadata/capabilities/assetTypes: llm
