@@ -9,7 +9,7 @@ metadata:
       Search vector index. Model-in-key, exact-cache fast path,
       configurable similarity threshold, TTL, fail-open/closed.
     category: LLM
-    metadata/interfaceScope: api
+    metadata/interfaceScope: api,resource
     metadata/capabilities/assetTypes: llm
 spec:
   extends:

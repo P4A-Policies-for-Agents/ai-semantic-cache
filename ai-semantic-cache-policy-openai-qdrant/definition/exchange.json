@@ -2,7 +2,7 @@
   "main": "metadata.yaml",
   "groupId": "00000000-0000-0000-0000-000000000000",
   "assetId": "ai-semantic-cache-policy-openai-qdrant",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "name": "AI Semantic Cache Policy (OpenAI + Qdrant)",
   "description": "Semantic response cache for LLM traffic. OpenAI-compatible embedder + Qdrant (OSS / self-hosted or Qdrant Cloud) vector store, with platform-managed exact-cache fast path."
 }
