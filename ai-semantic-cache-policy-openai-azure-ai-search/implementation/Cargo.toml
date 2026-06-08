@@ -12,7 +12,8 @@ crate-type = ["cdylib"]
 [package.metadata.anypoint]
 group_id = "00000000-0000-0000-0000-000000000000"
 definition_asset_id = { name = "ai-semantic-cache-policy-openai-azure-ai-search", version = "1.0.0" }
-implementation_asset_id = "ai-semantic-cache-policy-openai-azure-ai-search-flex"
+implementation_asset_id = "ai-semantic-cache-policy-openai-azure-ai-search-v1-0-impl"
+
 
 [dependencies]
 ai_semantic_cache_core = { workspace = true }
