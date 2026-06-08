@@ -8,7 +8,7 @@ metadata:
       Semantic LLM response cache. OpenAI-compatible embedder + Azure AI
       Search vector index. Model-in-key, exact-cache fast path,
       configurable similarity threshold, TTL, fail-open/closed.
-    category: AI
+    category: LLM
     metadata/interfaceScope: api
     metadata/capabilities/assetTypes: llm
 spec:
