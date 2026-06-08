@@ -6,10 +6,6 @@ Azure AI Search variant of the AI Semantic Cache policy family. Caches LLM respo
 - **Azure AI Search** as the semantic similarity store (REST: `POST /indexes/{name}/docs/index` for upsert/delete, `POST /indexes/{name}/docs/search` for vector search, `GET /indexes/{name}/docs/{id}` for exact lookup).
 - **PDK shared KV** (`pdk::data_storage::DataStorageBuilder.remote(...)`) for the byte-identical-prompt **exact-cache fast path** — zero customer-managed infrastructure for the fast path.
 
-On a hit the gateway replays the cached completion without calling the upstream LLM. On a miss it forwards upstream, captures the response, and writes back to both layers best-effort. See [`../docs/architecture.md`](../docs/architecture.md) for the full design and [`../docs/competitive_analysis.md`](../docs/competitive_analysis.md) for positioning vs Kong / Apigee / Azure APIM / Solo.io.
-
-> **Score-range warning.** Azure AI Search returns a reranked `@search.score` (BM25 + vector + optional semantic reranker), **not raw cosine**. A `similarityThreshold` that works well for Pinecone or Qdrant will not transfer — tune against your corpus. Start at `0.5` and observe `X-Cache-Score` from the response headers.
-
 ## Configuration reference
 
 All fields live under the policy block in your `ApiInstance`. Required fields are marked **R**.
@@ -121,7 +117,7 @@ See [`implementation/playground/README.md`](./implementation/playground/README.m
 
 | | |
 |---|---|
-| Min Omni Gateway version | `1.11.0` |
+| Min Flex Gateway version | `1.11.0` |
 | PDK version | `1.8.0` |
 | Wasm target | `wasm32-wasip1` |
 | Azure AI Search REST API | `2024-07-01` (default; configurable via `vectordb.apiVersion`) |

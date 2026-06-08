@@ -6,8 +6,6 @@ MVP variant of the AI Semantic Cache policy family. Caches LLM responses keyed b
 - **Pinecone serverless** as the semantic similarity store (REST: `/vectors/upsert`, `/query`, `/vectors/fetch`, `/vectors/delete`).
 - **PDK shared KV** (`pdk::data_storage::DataStorageBuilder.remote(...)`) for the byte-identical-prompt **exact-cache fast path** — zero customer-managed infrastructure.
 
-On a hit the gateway replays the cached completion without calling the upstream LLM. On a miss it forwards upstream, captures the response, and writes back to both layers best-effort. See [`../docs/architecture.md`](../docs/architecture.md) for the full design and [`../docs/competitive_analysis.md`](../docs/competitive_analysis.md) for positioning vs Kong / Apigee / Azure APIM / Solo.io.
-
 ## Configuration reference
 
 All fields live under the policy block in your `ApiInstance`. Required fields are marked **R**.
@@ -82,13 +80,13 @@ All fields live under the policy block in your `ApiInstance`. Required fields ar
 
 ## Local trial
 
-See [`implementation/playground/README.md`](./implementation/playground/README.md) for a one-command Docker stack (Omni Gateway Replica + MockServer canned to look like OpenAI + Pinecone + the upstream LLM).
+See [`implementation/playground/README.md`](./implementation/playground/README.md) for a one-command Docker stack (Flex Replica + MockServer canned to look like OpenAI + Pinecone + the upstream LLM).
 
 ## Compatibility
 
 | | |
 |---|---|
-| Min Omni Gateway version | `1.11.0` |
+| Min Flex Gateway version | `1.11.0` |
 | PDK version | `1.8.0` |
 | Wasm target | `wasm32-wasip1` |
 

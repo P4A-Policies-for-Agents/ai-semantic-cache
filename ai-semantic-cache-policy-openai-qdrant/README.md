@@ -6,8 +6,6 @@ Qdrant variant of the AI Semantic Cache policy family. Caches LLM responses keye
 - **Qdrant** (self-hosted Docker / Kubernetes / Qdrant Cloud) as the semantic similarity store (REST: `/points/upsert`, `/points/search`, `/points/<id>`, `/points/delete`).
 - **PDK shared KV** (`pdk::data_storage::DataStorageBuilder.remote(...)`) for the byte-identical-prompt **exact-cache fast path** — zero customer-managed infrastructure for the fast path.
 
-On a hit the gateway replays the cached completion without calling the upstream LLM. On a miss it forwards upstream, captures the response, and writes back to both layers best-effort. See [`../docs/architecture.md`](../docs/architecture.md) for the full design and [`../docs/competitive_analysis.md`](../docs/competitive_analysis.md) for positioning vs Kong / Apigee / Azure APIM / Solo.io.
-
 ## Configuration reference
 
 All fields live under the policy block in your `ApiInstance`. Required fields are marked **R**.
@@ -105,13 +103,13 @@ The script ensures the collection exists (Cosine distance, your dimension) and t
 
 ## Local trial
 
-See [`implementation/playground/README.md`](./implementation/playground/README.md) for a one-command Docker stack (Omni Gateway Replica + MockServer canned to look like OpenAI + a real Qdrant Docker container).
+See [`implementation/playground/README.md`](./implementation/playground/README.md) for a one-command Docker stack (Flex Replica + MockServer canned to look like OpenAI + a real Qdrant Docker container).
 
 ## Compatibility
 
 | | |
 |---|---|
-| Min Omni Gateway version | `1.11.0` |
+| Min Flex Gateway version | `1.11.0` |
 | PDK version | `1.8.0` |
 | Wasm target | `wasm32-wasip1` |
 | Qdrant API surface | v1 REST (`/collections`, `/points`) |
